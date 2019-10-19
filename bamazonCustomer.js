@@ -1,28 +1,25 @@
-let mysql = require('mysql');
-let inquirer = require('inquirer');
+var mysql = require('mysql');
+var inquirer = require('inquirer');
 
-let port = 3306;
-
-let connection = mysql.createConnection({
+var connection = mysql.createConnection({
+  
   host: "localhost",
   port: 3306,
   user: "root",
   password: "",
   database: "bamazon_DB"
-});
+})
 
 connection.connect(function(err){
-    console.log('we try to using this function');
-    
   if (err) throw err;
   console.log("Connection Sucessful!")
   makeTable();
 })
  
-let makeTable = function() {
-connection.query('SELECT * FROM products', function(err, res){
+var makeTable = function() {
+connection.query('SELECT * FROM Products', function(err, res){
     if(err) throw err;
-    for(let i = 0; i<res.length;i++){
+    for(var i = 0; i<res.length;i++){
         console.log("Items:") 
         console.log("ID: " + res[i].item_id + " || " + "Product: " + res[i].product_name + " || " + "Department: " + res[i].department_name + " || " + "Price: " + res[i].price + " || " + "QTY: " + res[i].stock_quantity);
         console.log('----------------------------------------------------------------------------------')
@@ -32,55 +29,50 @@ connection.query('SELECT * FROM products', function(err, res){
   })
 }
 
-let promptCustomer = function(res) {
-     inquirer.prompt([{
+var promptCustomer = function(res) {
+    inquirer.prompt([{
         type: "input", 
         name: "choice",
         message: "Type desired item here: ",
-      }])
-      .then(function(answer){
-        let correct = false;
+      }]).then(function(answer){
+        var correct = false;
         if(answer.choice.toUpperCase()=="Q") {
           process.exit()
         }
-        
-    for(let i = 0; i<res.length;i++) {
-        if (res[i].product_name==answer.choice){
-         correct = true;
-        let product= answer.choice
-        let id=i
-        inquirer.prompt({
-        type: "input",
-        name: "quant",
-        message: "How many would you like to buy?",
-              
-    validate: function(value){
-        if(isNaN(value)==false) {
-        return true;
-       } else {
-        return false;
+        for(var i = 0; i<res.length;i++) {
+          if (res[i].product_name==answer.choice){
+            correct = true;
+            var product= answer.choice
+            var id=i
+            inquirer.prompt({
+              type: "input",
+              name: "quant",
+              message: "How many would you like to buy?",
+              validate: function(value){
+                if(isNaN(value)==false) {
+                  return true;
+                } else {
+                  return false;
+                }
+              }
+            }).then(function(answer){
+              if((res[id].stock_quantity-answer.quant)>0){
+                connection.query("UPDATE products SET stock_quantity='" + (res[id].stock_quantity-answer.quant)+"' WHERE product_name='"+product+"'", function(err, res2){
+                  console.log("Purchased!")
+                  makeTable()
+                })
+              } else {
+                console.log("Not Valid Selection!")
+                promptCustomer(res)
+              }
+            })
+          }
         }
-    }
-     })
-     
-     .then(function(answer){
-        if((res[id].stock_quantity-answer.quant)>0){
-            connection.query("UPDATE products SET stock_quantity='" + (res[id].stock_quantity-answer.quant)+"' WHERE product_name='"+product+"'", function(err, res2){
-                console.log("Purchased!")
-                makeTable()
-     })
-              
-        } else {
-            console.log("Not Valid Selection!")
-            promptCustomer(res)
-        }
-    })
-}
-}
         if (i==res.length && correct==false){
           console.log("Not a valid selection!")
           promptCustomer(res);
         }
       })
     }
+      
       
